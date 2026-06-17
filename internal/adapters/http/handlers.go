@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -17,8 +16,8 @@ type Server struct {
 
 func (s *Server) RecordExposure(w http.ResponseWriter, r *http.Request) {
 	var body api.RecordExposureJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, s.deps.Logger, errBadRequest)
+	if err := decodeJSONBody(r, &body); err != nil {
+		writeError(w, s.deps.Logger, err)
 		return
 	}
 	// The spec marks the body required but not its individual fields, so oapi

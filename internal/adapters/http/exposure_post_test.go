@@ -128,6 +128,20 @@ func TestPostExposure(t *testing.T) {
 		assertErrorSlug(t, resp, "invalid_request")
 	})
 
+	t.Run("trailing tokens after valid json returns 400 invalid_request", func(t *testing.T) {
+		srv, _ := newTestServer(t, clock)
+
+		// A valid object followed by a second JSON token must be rejected, not recorded.
+		body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}{"x":1}`,
+			seed.BobbyID, seed.AirCatID)
+		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assertErrorSlug(t, resp, "invalid_request")
+	})
+
 	t.Run("missing duration field returns 400 invalid_request", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
