@@ -71,4 +71,16 @@ func TestListExposures(t *testing.T) {
 		assert.True(t, errors.Is(err, domain.ErrDataConsistency))
 		assert.False(t, errors.Is(err, domain.ErrUserNotFound))
 	})
+
+	t.Run("dangling equipment reference is data-consistency error, not equipment-not-found", func(t *testing.T) {
+		h, exposures := newHandler()
+
+		exp, err := domain.NewExposure(seed.BobbyID, uuid.New(), 30, 2.1, base)
+		require.NoError(t, err)
+		require.NoError(t, exposures.Save(context.Background(), exp))
+
+		_, err = h.Handle(context.Background())
+		assert.True(t, errors.Is(err, domain.ErrDataConsistency))
+		assert.False(t, errors.Is(err, domain.ErrEquipmentNotFound))
+	})
 }

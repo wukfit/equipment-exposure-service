@@ -64,7 +64,11 @@ func TestGetExposures(t *testing.T) {
 			require.True(t, ok, "each item must have an id")
 			ids[id] = true
 
-			assert.NotEmpty(t, item["a8"])
+			// a8 decodes as float64; assert a real positive value (NotEmpty would
+			// pass silently on 0.0).
+			a8, ok := item["a8"].(float64)
+			require.True(t, ok, "a8 must be a number")
+			assert.Greater(t, a8, 0.0)
 
 			user, _ := item["user"].(map[string]any)
 			require.NotNil(t, user)
