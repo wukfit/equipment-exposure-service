@@ -1,4 +1,7 @@
-openapi: 3.1.0
+# OpenAPI 3.0.3 (not 3.1): oapi-codegen does not yet support 3.1.x and warns on
+# it; this spec uses no 3.1-only features, so 3.0.3 is the precise version and
+# keeps codegen + kin-openapi validation warning-free. See docs/design.md §3.
+openapi: 3.0.3
 info:
   version: 1.0.0
   title: Equipment Exposure Service
@@ -50,8 +53,7 @@ paths:
           schema:
             type: string
             format: uuid
-            examples:
-              - "e8f7b50c-cc18-42f9-a275-0b4ead73f806"
+            example: "e8f7b50c-cc18-42f9-a275-0b4ead73f806"
       responses:
         # Corrected from the supplied spec's "201": a GET that returns an
         # existing resource is 200, not 201 (Created). See docs/design.md §3.
@@ -79,8 +81,7 @@ paths:
           schema:
             type: string
             format: uuid
-            examples:
-              - "713be58e-0d79-4df2-a85c-9f44ca513a7d"
+            example: "713be58e-0d79-4df2-a85c-9f44ca513a7d"
         # Corrected from the supplied spec's "format: date": the examples are
         # RFC3339 date-times and exposure windows need exact instants/timezone,
         # which a calendar date cannot express. See docs/design.md §3.
@@ -90,16 +91,14 @@ paths:
           schema:
             type: string
             format: date-time
-            examples:
-              - "2025-01-01T00:00:00Z"
+            example: "2025-01-01T00:00:00Z"
         - name: ending_at
           required: false
           in: query
           schema:
             type: string
             format: date-time
-            examples:
-              - "2025-01-31T23:59:59Z"
+            example: "2025-01-31T23:59:59Z"
       responses:
         "200":
           description: The summary payload
@@ -126,18 +125,15 @@ components:
               equipment_id:
                 type: string
                 format: uuid
-                examples:
-                  - "2e85d43d-dd9b-4e8d-b2ce-97b8d7d69d49"
+                example: "2e85d43d-dd9b-4e8d-b2ce-97b8d7d69d49"
               duration:
                 type: integer
                 description: The duration of the exposure (in minutes)
-                examples:
-                  - 5
+                example: 5
               user_id:
                 type: string
                 format: uuid
-                examples:
-                  - "713be58e-0d79-4df2-a85c-9f44ca513a7d"
+                example: "713be58e-0d79-4df2-a85c-9f44ca513a7d"
   # Added (not in the supplied spec): a shared error response contract so the
   # error surface is part of the spec and can be validated. See docs/design.md §3.
   responses:
@@ -172,25 +168,21 @@ components:
         id:
           type: string
           format: uuid
-          examples:
-            - "e8f7b50c-cc18-42f9-a275-0b4ead73f806"
+          example: "e8f7b50c-cc18-42f9-a275-0b4ead73f806"
         equipment:
           $ref: "#/components/schemas/EquipmentItem"
         duration:
           type: integer
           description: The duration of the exposure (in minutes)
-          examples:
-            - 5
+          example: 5
         a8:
           type: number
           description: The A8 value for the exposure
-          examples:
-            - 1.25
+          example: 1.25
         points:
           type: number
           description: The partial exposure of points
-          examples:
-            - 25.1
+          example: 25.1
         user:
           $ref: "#/components/schemas/User"
     ExposureSummary:
@@ -199,13 +191,11 @@ components:
         a8:
           type: number
           description: The A8 value for the exposure
-          examples:
-            - 1.25
+          example: 1.25
         points:
           type: number
           description: The partial exposure of points
-          examples:
-            - 25.1
+          example: 25.1
         user:
           $ref: "#/components/schemas/User"
     User:
@@ -214,31 +204,23 @@ components:
         id:
           type: string
           format: uuid
-          examples:
-            - "713be58e-0d79-4df2-a85c-9f44ca513a7d"
+          example: "713be58e-0d79-4df2-a85c-9f44ca513a7d"
         name:
           type: string
-          examples:
-            - "Bobby Tables"
+          example: "Bobby Tables"
     EquipmentItem:
       type: object
       properties:
         id:
           type: string
           format: uuid
-          examples:
-            - "2e85d43d-dd9b-4e8d-b2ce-97b8d7d69d49"
-            - "36603447-2f30-41b1-a908-526c0b6f1755"
+          example: "2e85d43d-dd9b-4e8d-b2ce-97b8d7d69d49"
         name:
           type: string
-          examples:
-            - "AirCat - Drill - 4337"
-            - "JCB - Hydraulic Breaker - CEJCBHM25"
+          example: "AirCat - Drill - 4337"
         vibration_magnitude:
           type: number
-          examples:
-            - 2.1
-            - 4.0
+          example: 2.1
     # Added (not in the supplied spec): the body returned by all error responses.
     ErrorResponse:
       type: object
@@ -246,10 +228,8 @@ components:
         error:
           type: string
           description: A short, machine-readable error slug
-          examples:
-            - "exposure_not_found"
+          example: "exposure_not_found"
         message:
           type: string
           description: A human-readable description of the error
-          examples:
-            - "no exposure with that id"
+          example: "no exposure with that id"
