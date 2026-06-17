@@ -1,11 +1,11 @@
-package http
+package httpapi
 
 import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
 
-	"github.com/wukfit/equipment-exposure-service/internal/adapters/http/api"
+	"github.com/wukfit/equipment-exposure-service/internal/adapters/httpapi/api"
 	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/app/command"
 	"github.com/wukfit/equipment-exposure-service/internal/app/query"
@@ -13,11 +13,11 @@ import (
 
 // RouterDeps carries handler dependencies.
 type RouterDeps struct {
-	Logger                *slog.Logger
-	Clock                 app.Clock
-	RecordExposure        *command.RecordExposure
-	GetExposure           *query.GetExposure
-	ListExposures         *query.ListExposures
+	Logger                 *slog.Logger
+	Clock                  app.Clock
+	RecordExposure         *command.RecordExposure
+	GetExposure            *query.GetExposure
+	ListExposures          *query.ListExposures
 	GetUserExposureSummary *query.GetUserExposureSummary
 }
 

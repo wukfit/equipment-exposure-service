@@ -51,7 +51,7 @@ internal/app                        application PORTS (ExposureStore, UserDirect
 internal/app/command                RecordExposure
 internal/app/query                  GetExposure, ListExposures,
                                     GetUserExposureSummary  (+ ExposureReadModel)
-internal/adapters/http              oapi-codegen server iface, request→cmd/query
+internal/adapters/httpapi           oapi-codegen server iface, request→cmd/query
                                     mapping, ExposureReadModel→response mapping,
                                     error mapping, middleware
 internal/adapters/repository/memory in-memory adapters (wired now)

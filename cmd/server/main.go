@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/wukfit/equipment-exposure-service/internal/adapters/events"
-	apphttp "github.com/wukfit/equipment-exposure-service/internal/adapters/http"
+	"github.com/wukfit/equipment-exposure-service/internal/adapters/httpapi"
 	"github.com/wukfit/equipment-exposure-service/internal/adapters/repository/memory"
 	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/app/command"
@@ -32,7 +32,7 @@ func main() {
 	equipment := memory.NewEquipmentRepo(seed.Equipment()...)
 	publisher := events.NewSlogPublisher(logger)
 
-	router := apphttp.NewRouter(apphttp.RouterDeps{
+	router := httpapi.NewRouter(httpapi.RouterDeps{
 		Logger:                 logger,
 		Clock:                  app.SystemClock,
 		RecordExposure:         command.NewRecordExposure(exposures, users, equipment, publisher, app.SystemClock),

@@ -57,9 +57,9 @@ func RunExposureStore(t *testing.T, newStore func() app.ExposureStore) {
 		start := base
 		end := base.Add(2 * time.Hour)
 
-		atStart, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, start)                          // included: recordedAt == start
-		justBeforeEnd, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, end.Add(-time.Nanosecond)) // included: recordedAt < end
-		atEnd, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, end)                               // excluded: recordedAt == end
+		atStart, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, start)                               // included: recordedAt == start
+		justBeforeEnd, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, end.Add(-time.Nanosecond))     // included: recordedAt < end
+		atEnd, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, end)                                   // excluded: recordedAt == end
 		justBeforeStart, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, start.Add(-time.Nanosecond)) // excluded: recordedAt < start
 		for _, e := range []*domain.Exposure{atStart, justBeforeEnd, atEnd, justBeforeStart} {
 			require.NoError(t, repo.Save(ctx, e))
