@@ -212,6 +212,33 @@ An in-code seam is included and exercised; a real broker is described, not built
   service owns no user/equipment CRUD: that data is owned elsewhere and would
   arrive via events.
 
+## Observability
+
+Structured, correlation-friendly **logging is built in**; **metrics and
+distributed tracing are deliberate next steps** — out of scope for the brief, and
+a full stack (Prometheus, a collector, Jaeger) would work against single-command
+runnability. The seams for both are already in place.
+
+**Built in (logging):**
+- **Structured JSON logs** via `log/slog`, level set by `LOG_LEVEL`
+  (`debug|info|warn|error`).
+- **Per-request correlation** — a `requestID` middleware mints a UUID per request,
+  returns it as `X-Request-ID`, and threads it through the request `context`.
+- **Access + latency logging** — method, path, status, `elapsed_ms`, `request_id`.
+- **Panic recovery** — recovers, logs, and returns a clean `500` instead of
+  dropping the connection. Errors mapped to `5xx` are logged with full detail
+  while the client gets only a generic body (no internal leakage).
+
+**Deferred, with the seam identified:**
+- **Metrics** — a Prometheus `/metrics` endpoint (request counter + latency
+  histogram) drops into the existing middleware chain; the `statusWriter` that
+  already captures the response status is the instrumentation hook.
+- **Distributed tracing** — `context.Context` is threaded end-to-end
+  (handler → app → repository), so OpenTelemetry is *wiring, not refactoring*: an
+  `otelhttp` handler at the edge, a tracer provider with an OTLP exporter, and
+  optionally an slog handler that stamps the active trace/span ID onto every log
+  line — joining logs to traces through the correlation seam above.
+
 ## Testing
 
 Comprehensive, outside-in, test-first across four tiers (see design §10):
