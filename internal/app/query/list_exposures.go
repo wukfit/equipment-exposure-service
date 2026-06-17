@@ -17,6 +17,8 @@ func NewListExposures(e domain.ExposureRepository, u domain.UserRepository, eq d
 }
 
 func (h *ListExposures) Handle(ctx context.Context) ([]*ExposureReadModel, error) {
+	// List's order (RecordedAt asc, ties by ID) is guaranteed by the repository
+	// port contract, so the response order is deterministic across adapters.
 	exps, err := h.exposures.List(ctx)
 	if err != nil {
 		return nil, err

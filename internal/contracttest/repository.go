@@ -75,7 +75,35 @@ func RunExposureRepository(t *testing.T, newRepo func() domain.ExposureRepositor
 		assert.True(t, ids[justBeforeEnd.ID()], "exposure just before end must be included")
 		assert.False(t, ids[atEnd.ID()], "exposure exactly at end must be excluded ([start, end))")
 		assert.False(t, ids[justBeforeStart.ID()], "exposure before start must be excluded")
-		assert.Len(t, got, 2)
+		require.Len(t, got, 2)
+		// window results are RecordedAt-ascending, same as List
+		assert.Equal(t, atStart.ID(), got[0].ID())
+		assert.Equal(t, justBeforeEnd.ID(), got[1].ID())
+	})
+
+	t.Run("List is ordered by RecordedAt asc, ties broken by ID asc", func(t *testing.T) {
+		// Pins the List ordering as part of the port contract so a non-deterministic
+		// adapter (e.g. Postgres without ORDER BY recorded_at, id) cannot pass.
+		repo := newRepo()
+		earlier, _ := domain.NewExposure(uuid.New(), uuid.New(), 30, 2.1, base.Add(-time.Hour))
+		// Two exposures at the SAME timestamp: the tie must be broken by ID asc.
+		sameA, _ := domain.NewExposure(uuid.New(), uuid.New(), 30, 2.1, base)
+		sameB, _ := domain.NewExposure(uuid.New(), uuid.New(), 30, 2.1, base)
+		lowID, highID := sameA, sameB
+		if highID.ID().String() < lowID.ID().String() {
+			lowID, highID = sameB, sameA
+		}
+		// Save out of insertion order to prove the repo sorts, not insertion-orders.
+		for _, e := range []*domain.Exposure{highID, earlier, lowID} {
+			require.NoError(t, repo.Save(ctx, e))
+		}
+
+		got, err := repo.List(ctx)
+		require.NoError(t, err)
+		require.Len(t, got, 3)
+		assert.Equal(t, earlier.ID(), got[0].ID(), "earliest RecordedAt first")
+		assert.Equal(t, lowID.ID(), got[1].ID(), "same timestamp: lower ID first")
+		assert.Equal(t, highID.ID(), got[2].ID(), "same timestamp: higher ID second")
 	})
 
 	t.Run("concurrent saves are safe", func(t *testing.T) {
