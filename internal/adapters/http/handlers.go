@@ -42,7 +42,16 @@ func (s *Server) RecordExposure(w http.ResponseWriter, r *http.Request) {
 // --- stubs filled in by later slices ---
 
 func (s *Server) GetExposures(w http.ResponseWriter, r *http.Request) {
-	notImplemented(w)
+	rms, err := s.deps.ListExposures.Handle(r.Context())
+	if err != nil {
+		writeError(w, s.deps.Logger, err)
+		return
+	}
+	out := make([]api.Exposure, 0, len(rms))
+	for _, rm := range rms {
+		out = append(out, toAPIExposure(rm))
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) GetExposure(w http.ResponseWriter, r *http.Request, exposureId uuid.UUID) {

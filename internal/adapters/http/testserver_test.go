@@ -33,7 +33,8 @@ func newTestServer(t *testing.T, clock app.Clock) (*httptest.Server, *memory.Exp
 			events.NewSlogPublisher(logger),
 			clock,
 		),
-		GetExposure: query.NewGetExposure(exposures, users, equipment),
+		GetExposure:   query.NewGetExposure(exposures, users, equipment),
+		ListExposures: query.NewListExposures(exposures, users, equipment),
 	}
 	srv := httptest.NewServer(apphttp.NewRouter(deps))
 	t.Cleanup(srv.Close)
