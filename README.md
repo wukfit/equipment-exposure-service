@@ -50,6 +50,12 @@ straight into requests:
 | User | `713be58e-0d79-4df2-a85c-9f44ca513a7d` | Bobby Tables |
 | User | `a52a3c1e-7b2d-4c9a-9f0e-1d6b8c4f2a10` | Alice Stone |
 
+> The seed stands in for users and equipment that, in production, are **owned by
+> other bounded contexts** and would arrive via `UserCreated` / `EquipmentRegistered`
+> events (see **Events** below). This service treats them as **read-only reference
+> data** and deliberately owns no CRUD for them — consistent with the brief, which
+> describes the entities but asks for no user/equipment management.
+
 ## API
 
 All four endpoints are defined in `spec.yaml`. Exposure responses embed the
