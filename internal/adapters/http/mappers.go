@@ -7,6 +7,15 @@ import (
 
 func ptr[T any](v T) *T { return &v }
 
+// toAPISummary builds the ExposureSummary API response from the query result.
+func toAPISummary(s *query.UserExposureSummary) api.ExposureSummary {
+	return api.ExposureSummary{
+		A8:     ptr(float32(s.Partial.A8())),
+		Points: ptr(float32(s.Partial.Points())),
+		User:   ptr(api.User{Id: ptr(s.User.ID()), Name: ptr(s.User.Name())}),
+	}
+}
+
 // toAPIExposure builds the embedded API Exposure from the read model.
 func toAPIExposure(rm *query.ExposureReadModel) api.Exposure {
 	e, u, eq := rm.Exposure, rm.User, rm.Equipment

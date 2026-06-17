@@ -2,10 +2,12 @@ package http
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/wukfit/equipment-exposure-service/internal/adapters/http/api"
+	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/app/command"
 )
 
@@ -64,9 +66,25 @@ func (s *Server) GetExposure(w http.ResponseWriter, r *http.Request, exposureId 
 }
 
 func (s *Server) GetUserExposureSummary(w http.ResponseWriter, r *http.Request, userId uuid.UUID, params api.GetUserExposureSummaryParams) {
-	notImplemented(w)
+	start, end := normaliseUTC(params.StartingAt), normaliseUTC(params.EndingAt)
+	from, to, err := app.ResolveWindow(s.deps.Clock, start, end)
+	if err != nil {
+		writeError(w, s.deps.Logger, err) // ErrInvalidWindow -> 400 invalid_window
+		return
+	}
+	summary, err := s.deps.GetUserExposureSummary.Handle(r.Context(), userId, from, to)
+	if err != nil {
+		writeError(w, s.deps.Logger, err) // ErrUserNotFound -> 404
+		return
+	}
+	writeJSON(w, http.StatusOK, toAPISummary(summary))
 }
 
-func notImplemented(w http.ResponseWriter) {
-	writeJSON(w, http.StatusNotImplemented, errorBody{Error: "not_implemented", Message: "endpoint not implemented yet"})
+// normaliseUTC converts an optional timestamp to UTC (design §3).
+func normaliseUTC(t *time.Time) *time.Time {
+	if t == nil {
+		return nil
+	}
+	u := t.UTC()
+	return &u
 }

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/domain"
 )
 
@@ -29,6 +30,8 @@ func writeError(w http.ResponseWriter, logger *slog.Logger, err error) {
 		status, slug = http.StatusNotFound, "exposure_not_found"
 	case errors.Is(err, domain.ErrInvalidDuration):
 		status, slug = http.StatusUnprocessableEntity, "invalid_duration"
+	case errors.Is(err, app.ErrInvalidWindow):
+		status, slug = http.StatusBadRequest, "invalid_window"
 	case errors.Is(err, errBadRequest):
 		status, slug = http.StatusBadRequest, "invalid_request"
 	}
