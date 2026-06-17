@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -14,11 +15,20 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: parseLevel(getenv("LOG_LEVEL", "info")),
+	}))
 	slog.SetDefault(logger)
 
 	router := apphttp.NewRouter(apphttp.RouterDeps{Logger: logger})
-	srv := &http.Server{Addr: ":" + getenv("PORT", "8080"), Handler: router}
+	srv := &http.Server{
+		Addr:              ":" + getenv("PORT", "8080"),
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
 
 	go func() {
 		logger.Info("starting server", slog.String("addr", srv.Addr))
@@ -45,4 +55,17 @@ func getenv(k, def string) string {
 		return v
 	}
 	return def
+}
+
+func parseLevel(s string) slog.Level {
+	switch strings.ToLower(s) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

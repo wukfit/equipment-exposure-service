@@ -1,0 +1,17 @@
+# VCS & agent scratch
+.git
+.gitignore
+.claude
+
+# Docs (not needed for the build)
+docs
+*.md
+
+# Test & coverage artifacts
+*.test
+*.out
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode

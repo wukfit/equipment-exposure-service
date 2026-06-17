@@ -46,7 +46,9 @@ func recoverPanic(logger *slog.Logger) func(http.Handler) http.Handler {
 			defer func() {
 				if rec := recover(); rec != nil {
 					logger.Error("panic", slog.Any("recover", rec))
-					http.Error(w, `{"error":"server_error","message":"internal error"}`, http.StatusInternalServerError)
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusInternalServerError)
+					_, _ = w.Write([]byte(`{"error":"server_error","message":"internal error"}`))
 				}
 			}()
 			next.ServeHTTP(w, r)
