@@ -46,7 +46,12 @@ func (s *Server) GetExposures(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetExposure(w http.ResponseWriter, r *http.Request, exposureId uuid.UUID) {
-	notImplemented(w)
+	rm, err := s.deps.GetExposure.Handle(r.Context(), exposureId)
+	if err != nil {
+		writeError(w, s.deps.Logger, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toAPIExposure(rm))
 }
 
 func (s *Server) GetUserExposureSummary(w http.ResponseWriter, r *http.Request, userId uuid.UUID, params api.GetUserExposureSummaryParams) {

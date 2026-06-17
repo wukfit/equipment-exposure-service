@@ -7,12 +7,14 @@ import (
 
 	"github.com/wukfit/equipment-exposure-service/internal/adapters/http/api"
 	"github.com/wukfit/equipment-exposure-service/internal/app/command"
+	"github.com/wukfit/equipment-exposure-service/internal/app/query"
 )
 
 // RouterDeps carries handler dependencies.
 type RouterDeps struct {
 	Logger         *slog.Logger
 	RecordExposure *command.RecordExposure
+	GetExposure    *query.GetExposure
 }
 
 func NewRouter(deps RouterDeps) http.Handler {
@@ -26,7 +28,14 @@ func NewRouter(deps RouterDeps) http.Handler {
 	})
 
 	server := &Server{deps: deps}
-	api.HandlerFromMux(server, mux)
+	api.HandlerWithOptions(server, api.StdHTTPServerOptions{
+		BaseRouter: mux,
+		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			// Generated param-binding failures (malformed path uuid, bad/missing
+			// query params) -> our JSON 400 error contract, not plain text.
+			writeError(w, deps.Logger, errBadRequest)
+		},
+	})
 
 	var h http.Handler = mux
 	h = recoverPanic(deps.Logger)(h)

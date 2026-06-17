@@ -16,6 +16,7 @@ import (
 	"github.com/wukfit/equipment-exposure-service/internal/adapters/repository/memory"
 	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/app/command"
+	"github.com/wukfit/equipment-exposure-service/internal/app/query"
 	"github.com/wukfit/equipment-exposure-service/internal/seed"
 )
 
@@ -34,6 +35,7 @@ func main() {
 	router := apphttp.NewRouter(apphttp.RouterDeps{
 		Logger:         logger,
 		RecordExposure: command.NewRecordExposure(exposures, users, equipment, publisher, app.SystemClock),
+		GetExposure:    query.NewGetExposure(exposures, users, equipment),
 	})
 	srv := &http.Server{
 		Addr:              ":" + getenv("PORT", "8080"),
