@@ -6,16 +6,19 @@ import (
 	"net/http"
 
 	"github.com/wukfit/equipment-exposure-service/internal/adapters/http/api"
+	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/app/command"
 	"github.com/wukfit/equipment-exposure-service/internal/app/query"
 )
 
 // RouterDeps carries handler dependencies.
 type RouterDeps struct {
-	Logger         *slog.Logger
-	RecordExposure *command.RecordExposure
-	GetExposure    *query.GetExposure
-	ListExposures  *query.ListExposures
+	Logger                *slog.Logger
+	Clock                 app.Clock
+	RecordExposure        *command.RecordExposure
+	GetExposure           *query.GetExposure
+	ListExposures         *query.ListExposures
+	GetUserExposureSummary *query.GetUserExposureSummary
 }
 
 func NewRouter(deps RouterDeps) http.Handler {

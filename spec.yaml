@@ -164,6 +164,7 @@ components:
   schemas:
     Exposure:
       type: object
+      required: [id, equipment, duration, a8, points, user]
       properties:
         id:
           type: string
@@ -187,6 +188,7 @@ components:
           $ref: "#/components/schemas/User"
     ExposureSummary:
       type: object
+      required: [a8, points, user]
       properties:
         a8:
           type: number
@@ -200,6 +202,7 @@ components:
           $ref: "#/components/schemas/User"
     User:
       type: object
+      required: [id, name]
       properties:
         id:
           type: string
@@ -210,6 +213,7 @@ components:
           example: "Bobby Tables"
     EquipmentItem:
       type: object
+      required: [id, name, vibration_magnitude]
       properties:
         id:
           type: string
@@ -224,6 +228,7 @@ components:
     # Added (not in the supplied spec): the body returned by all error responses.
     ErrorResponse:
       type: object
+      required: [error, message]
       properties:
         error:
           type: string

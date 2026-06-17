@@ -23,16 +23,18 @@ func TestPostExposure(t *testing.T) {
 	t.Run("happy path returns 201 with correct fields", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
-		body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}`,
+		reqBody := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}`,
 			seed.BobbyID, seed.AirCatID)
-		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(reqBody))
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusCreated, resp.StatusCode)
+		checkSpec(t, http.MethodPost, srv.URL+"/exposure", resp.StatusCode, resp.Header, body)
 
 		var got map[string]any
-		require.NoError(t, json.NewDecoder(resp.Body).Decode(&got))
+		require.NoError(t, json.NewDecoder(bytes.NewReader(body)).Decode(&got))
 
 		// id is a valid uuid
 		idStr, _ := got["id"].(string)
@@ -56,40 +58,46 @@ func TestPostExposure(t *testing.T) {
 	t.Run("unknown user_id returns 404 user_not_found", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
-		body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}`,
+		reqBody := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}`,
 			uuid.New(), seed.AirCatID)
-		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(reqBody))
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-		assertErrorSlug(t, resp, "user_not_found")
+		checkSpec(t, http.MethodPost, srv.URL+"/exposure", resp.StatusCode, resp.Header, body)
+		assertErrorSlug(t, body, "user_not_found")
 	})
 
 	t.Run("unknown equipment_id returns 404 equipment_not_found", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
-		body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}`,
+		reqBody := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}`,
 			seed.BobbyID, uuid.New())
-		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(reqBody))
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-		assertErrorSlug(t, resp, "equipment_not_found")
+		checkSpec(t, http.MethodPost, srv.URL+"/exposure", resp.StatusCode, resp.Header, body)
+		assertErrorSlug(t, body, "equipment_not_found")
 	})
 
 	t.Run("duration 0 returns 422 invalid_duration", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
-		body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":0}`,
+		reqBody := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":0}`,
 			seed.BobbyID, seed.AirCatID)
-		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(reqBody))
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
-		assertErrorSlug(t, resp, "invalid_duration")
+		checkSpec(t, http.MethodPost, srv.URL+"/exposure", resp.StatusCode, resp.Header, body)
+		assertErrorSlug(t, body, "invalid_duration")
 	})
 
 	t.Run("malformed JSON returns 400 invalid_request", func(t *testing.T) {
@@ -98,66 +106,77 @@ func TestPostExposure(t *testing.T) {
 		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString("{"))
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		assertErrorSlug(t, resp, "invalid_request")
+		checkSpec(t, http.MethodPost, srv.URL+"/exposure", resp.StatusCode, resp.Header, body)
+		assertErrorSlug(t, body, "invalid_request")
 	})
 
 	t.Run("bad uuid string in user_id returns 400", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
-		body := fmt.Sprintf(`{"user_id":"not-a-uuid","equipment_id":%q,"duration":30}`, seed.AirCatID)
-		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		reqBody := fmt.Sprintf(`{"user_id":"not-a-uuid","equipment_id":%q,"duration":30}`, seed.AirCatID)
+		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(reqBody))
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		checkSpec(t, http.MethodPost, srv.URL+"/exposure", resp.StatusCode, resp.Header, body)
 	})
 
 	t.Run("wrong-typed duration (json string) returns 400 invalid_request", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
 		// valid JSON, wrong type: duration as a string fails to decode into *int.
-		body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":"30"}`,
+		reqBody := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":"30"}`,
 			seed.BobbyID, seed.AirCatID)
-		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(reqBody))
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		assertErrorSlug(t, resp, "invalid_request")
+		checkSpec(t, http.MethodPost, srv.URL+"/exposure", resp.StatusCode, resp.Header, body)
+		assertErrorSlug(t, body, "invalid_request")
 	})
 
 	t.Run("trailing tokens after valid json returns 400 invalid_request", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
 		// A valid object followed by a second JSON token must be rejected, not recorded.
-		body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}{"x":1}`,
+		reqBody := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}{"x":1}`,
 			seed.BobbyID, seed.AirCatID)
-		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(reqBody))
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		assertErrorSlug(t, resp, "invalid_request")
+		checkSpec(t, http.MethodPost, srv.URL+"/exposure", resp.StatusCode, resp.Header, body)
+		assertErrorSlug(t, body, "invalid_request")
 	})
 
 	t.Run("missing duration field returns 400 invalid_request", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
-		body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q}`, seed.BobbyID, seed.AirCatID)
-		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		reqBody := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q}`, seed.BobbyID, seed.AirCatID)
+		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(reqBody))
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		assertErrorSlug(t, resp, "invalid_request")
+		checkSpec(t, http.MethodPost, srv.URL+"/exposure", resp.StatusCode, resp.Header, body)
+		assertErrorSlug(t, body, "invalid_request")
 	})
 }
 
-func assertErrorSlug(t *testing.T, resp *http.Response, wantSlug string) {
+// assertErrorSlug decodes an error slug from raw body bytes.
+func assertErrorSlug(t *testing.T, body []byte, wantSlug string) {
 	t.Helper()
-	var body map[string]any
-	require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
-	assert.Equal(t, wantSlug, body["error"])
+	var got map[string]any
+	require.NoError(t, json.NewDecoder(bytes.NewReader(body)).Decode(&got))
+	assert.Equal(t, wantSlug, got["error"])
 }

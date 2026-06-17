@@ -22,14 +22,17 @@ func TestGetExposures(t *testing.T) {
 	t.Run("empty repo returns 200 with empty JSON array, not null", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
-		resp, err := http.Get(srv.URL + "/exposure")
+		listURL := srv.URL + "/exposure"
+		resp, err := http.Get(listURL)
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		checkSpec(t, http.MethodGet, listURL, resp.StatusCode, resp.Header, body)
 
 		var got []any
-		require.NoError(t, json.NewDecoder(resp.Body).Decode(&got))
+		require.NoError(t, json.NewDecoder(bytes.NewReader(body)).Decode(&got))
 		assert.NotNil(t, got, "body must be [] not null")
 		assert.Len(t, got, 0)
 	})
@@ -38,8 +41,8 @@ func TestGetExposures(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
 		post := func(userID, equipID string, duration int) {
-			body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":%d}`, userID, equipID, duration)
-			resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+			reqBody := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":%d}`, userID, equipID, duration)
+			resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(reqBody))
 			require.NoError(t, err)
 			resp.Body.Close()
 			require.Equal(t, http.StatusCreated, resp.StatusCode)
@@ -48,14 +51,17 @@ func TestGetExposures(t *testing.T) {
 		post(seed.BobbyID.String(), seed.AirCatID.String(), 30)
 		post(seed.BobbyID.String(), seed.JCBID.String(), 120)
 
-		resp, err := http.Get(srv.URL + "/exposure")
+		listURL := srv.URL + "/exposure"
+		resp, err := http.Get(listURL)
 		require.NoError(t, err)
 		defer resp.Body.Close()
+		body := readBody(t, resp)
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		checkSpec(t, http.MethodGet, listURL, resp.StatusCode, resp.Header, body)
 
 		var got []map[string]any
-		require.NoError(t, json.NewDecoder(resp.Body).Decode(&got))
+		require.NoError(t, json.NewDecoder(bytes.NewReader(body)).Decode(&got))
 		require.Len(t, got, 2)
 
 		ids := map[string]bool{}
