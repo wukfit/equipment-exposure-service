@@ -11,7 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/wukfit/equipment-exposure-service/internal/adapters/events"
 	apphttp "github.com/wukfit/equipment-exposure-service/internal/adapters/http"
+	"github.com/wukfit/equipment-exposure-service/internal/adapters/repository/memory"
+	"github.com/wukfit/equipment-exposure-service/internal/app"
+	"github.com/wukfit/equipment-exposure-service/internal/app/command"
+	"github.com/wukfit/equipment-exposure-service/internal/seed"
 )
 
 func main() {
@@ -20,7 +25,16 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	router := apphttp.NewRouter(apphttp.RouterDeps{Logger: logger})
+	// Wire the app over in-memory repos preloaded with the seed catalog.
+	exposures := memory.NewExposureRepo()
+	users := memory.NewUserRepo(seed.Users()...)
+	equipment := memory.NewEquipmentRepo(seed.Equipment()...)
+	publisher := events.NewSlogPublisher(logger)
+
+	router := apphttp.NewRouter(apphttp.RouterDeps{
+		Logger:         logger,
+		RecordExposure: command.NewRecordExposure(exposures, users, equipment, publisher, app.SystemClock),
+	})
 	srv := &http.Server{
 		Addr:              ":" + getenv("PORT", "8080"),
 		Handler:           router,
