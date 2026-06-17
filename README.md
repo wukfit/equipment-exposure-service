@@ -52,9 +52,9 @@ straight into requests:
 
 ## API
 
-All four endpoints are defined in `spec.yaml`. Responses embed the associated
-`user` and `equipment`; errors share one `{ "error": "<slug>", "message": "…" }`
-shape.
+All four endpoints are defined in `spec.yaml`. Exposure responses embed the
+associated `user` and `equipment`; the summary response embeds `user` only.
+Errors share one `{ "error": "<slug>", "message": "…" }` shape.
 
 ### `POST /exposure` — record an exposure → **201**
 
@@ -84,18 +84,25 @@ curl -s localhost:8080/exposure
 ### `GET /users/{userId}/exposure-summary` — aggregate over a window → **200**
 
 ```bash
-# default window = trailing 24h
+# default window = trailing 24h [now-24h, now)
 curl -s localhost:8080/users/713be58e-0d79-4df2-a85c-9f44ca513a7d/exposure-summary
 
-# explicit half-open window [starting_at, ending_at)
+# explicit half-open window [starting_at, ending_at) — RFC3339, UTC-normalised
 curl -s "localhost:8080/users/713be58e-0d79-4df2-a85c-9f44ca513a7d/exposure-summary?starting_at=2025-01-01T00:00:00Z&ending_at=2025-12-31T23:59:59Z"
 ```
+
+A user with two in-window exposures (AirCat 30 min + JCB 2 h) summarises to:
 ```json
 {"a8":2.0677586,"points":68,"user":{"id":"713be58e-…","name":"Bobby Tables"}}
 ```
 
+> Exposures are stamped with the server's current time, so the **window must
+> contain "now"** to include freshly-recorded exposures. The default trailing-24h
+> window does; a window that lies entirely in the past — e.g. the explicit 2025
+> example above, on a server running later — returns `{"a8":0,"points":0,…}`.
+
 **Try it end-to-end** — record an AirCat (30 min) and a JCB (2 h) for Bobby, then
-summarise (both land in the trailing-24h window):
+summarise with the default window (both land in the trailing-24h window):
 
 ```bash
 BOB=713be58e-0d79-4df2-a85c-9f44ca513a7d
