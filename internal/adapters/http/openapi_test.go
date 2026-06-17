@@ -23,12 +23,20 @@ var (
 func specRouterOnce(t *testing.T) routers.Router {
 	t.Helper()
 	specOnce.Do(func() {
+		// panic (not require) inside Once: a missing/broken spec is a setup fault,
+		// and panicking avoids the captured-t / cross-goroutine FailNow hazard.
 		loader := openapi3.NewLoader()
 		doc, err := loader.LoadFromFile("../../../spec.yaml")
-		require.NoError(t, err)
-		require.NoError(t, doc.Validate(loader.Context))
+		if err != nil {
+			panic("openapi_test: load spec.yaml: " + err.Error())
+		}
+		if err := doc.Validate(loader.Context); err != nil {
+			panic("openapi_test: validate spec.yaml: " + err.Error())
+		}
 		r, err := gorillamux.NewRouter(doc)
-		require.NoError(t, err)
+		if err != nil {
+			panic("openapi_test: build router: " + err.Error())
+		}
 		specRouter = r
 	})
 	return specRouter

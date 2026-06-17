@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/wukfit/equipment-exposure-service/internal/adapters/repository/memory"
-	"github.com/wukfit/equipment-exposure-service/internal/domain"
 	"github.com/wukfit/equipment-exposure-service/internal/app/query"
+	"github.com/wukfit/equipment-exposure-service/internal/domain"
 	"github.com/wukfit/equipment-exposure-service/internal/seed"
 )
 
@@ -58,17 +58,9 @@ func TestGetUserExposureSummary(t *testing.T) {
 	})
 
 	t.Run("unknown user returns ErrUserNotFound", func(t *testing.T) {
-		h, _ := setup(t)
-
-		_, err := h.Handle(ctx, seed.AliceID, base.Add(-time.Hour), base.Add(time.Hour))
-		// Alice is not in the user repo for this test — use a completely unknown ID
-		// Actually seed.AliceID IS in seed.Users() so use a random one
-		_ = err
-		// Re-create handler without Alice
-		exposures := memory.NewExposureRepo()
-		users := memory.NewUserRepo() // empty
-		h2 := query.NewGetUserExposureSummary(exposures, users)
-		_, err = h2.Handle(ctx, seed.BobbyID, base.Add(-time.Hour), base.Add(time.Hour))
+		// Handler over an empty user repo, so the lookup misses.
+		h := query.NewGetUserExposureSummary(memory.NewExposureRepo(), memory.NewUserRepo())
+		_, err := h.Handle(ctx, seed.BobbyID, base.Add(-time.Hour), base.Add(time.Hour))
 		assert.ErrorIs(t, err, domain.ErrUserNotFound)
 	})
 
