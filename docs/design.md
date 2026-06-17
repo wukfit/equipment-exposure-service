@@ -29,11 +29,15 @@ architecture, comprehensive test coverage, and single-command runnability.
 | Item | Decision | Rationale |
 |---|---|---|
 | HAVS calculation | **Corrected float maths** (see §5.3) | The provided functions use Go integer division `(triggerTime/60)/8`, truncating to **0 for any exposure under 8 hours** — the API would return zeros for virtually all real input. Deliberate, documented correction of an obvious translation bug. |
-| `GET /exposure/{id}` status | **200** (spec says 201) | 201 = "Created"; treated as a copy-paste typo from the POST. |
+| `GET /exposure/{id}` status | **200** — spec **corrected** from `201` | 201 (Created) is clearly wrong for a GET of an existing resource. |
 | Summary window default | both omitted → trailing **24h** (`now-24h .. now`); `start` only → `end=now`; `end` only → `start=end-24h` | Brief says "usually 24h windows"; params are optional. |
-| `starting_at`/`ending_at` parsing | accept **RFC3339 datetime** | Examples are full timestamps despite `format: date`; matches real usage. |
+| `starting_at`/`ending_at` | spec **corrected** `format: date` → `date-time` | Spec contradicted its own RFC3339 examples; a calendar date can't express window instants. Generated as `time.Time`, normalised to UTC. |
 | A(8) aggregation (summary) | **root-sum-of-squares** `√Σa8ᵢ²`; **points sum linearly** | HSE-correct energy combination; plain-summing A(8) is physically wrong. Spec is silent → documented assumption. |
 | Exposure timestamp | internal **`recordedAt`** = server `now()` at record time; **not serialised** | The `Exposure` response schema has no timestamp, but the summary filters by a window, so one is required internally. POST body carries no timestamp either. |
+| Summary window inclusivity | **half-open `[start, end)`** | An instant exactly on a boundary isn't counted in two adjacent windows. |
+| Error contract | **added** `ErrorResponse` schema + error responses to the spec | Supplied spec declared only success responses; *added* (not corrected) so the error surface is validated too. |
+
+> **Spec reconciliation:** the two corrections and one addition above are applied directly to `spec.yaml`, making it the single source of truth for codegen and response-validation; the README documents the diff from the originally-supplied spec. The POST body's missing `required` array is deliberately **not** added — required-ness is enforced at the boundary (absent field → `400`) to preserve the 400-absent vs 422-invalid distinction.
 
 ## 4. Architecture (ports & adapters)
 
@@ -138,7 +142,7 @@ to a response, and maps errors to status codes.
 - **`GET /users/{userId}/exposure-summary` → `GetUserExposureSummary{UserID, Start, End}`**
   1. Load `User` (→ `ErrUserNotFound` → 404) — needed because the summary
      embeds `user`.
-  2. `ListByUserInWindow(userID, start, end)`, then `Aggregate(partials)`.
+  2. `ListByUserInWindow(userID, start, end)` — **half-open `[start, end)`** — then `Aggregate(partials)`.
   3. Empty window → `a8:0, points:0` (not 404) → **200**.
 
 ### 6.1 Read model
@@ -155,14 +159,13 @@ it into `types.Exposure`.
 - **Framework: stdlib `net/http`** via oapi-codegen `std-http-server`; Go 1.22
   `ServeMux` for routing. Middleware chain: request-ID → structured (slog)
   logging → panic recovery.
-- **Error response** (spec defines none — documented gap-fill):
-  `{ "error": "<slug>", "message": "<human readable>" }`.
+- **Error response** — `{ "error": "<slug>", "message": "<human readable>" }`, now declared in the spec as the added `ErrorResponse` schema, so kin-openapi validates the error surface too.
 - **Single mapping helper** (`errors.Is`-based, explicit `default → 500` — avoids
   a nil-deref error-handling pitfall and per-handler duplication):
 
 | Error | Status |
 |---|---|
-| bad JSON / bad UUID / unparseable date param | 400 |
+| bad JSON / bad UUID / unparseable date param / **missing required body field** | 400 |
 | `ErrInvalidDuration` (well-formed but invalid) | 422 |
 | `ErrUserNotFound` / `ErrEquipmentNotFound` / `ErrExposureNotFound` | 404 |
 | unmatched | 500 (logged) |

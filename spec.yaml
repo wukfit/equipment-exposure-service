@@ -16,6 +16,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Exposure"
+        default:
+          $ref: "#/components/responses/InternalServerError"
     post:
       summary: Record an exposure
       operationId: recordExposure
@@ -28,6 +30,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Exposure"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        default:
+          $ref: "#/components/responses/InternalServerError"
 
   /exposure/{exposureId}:
     get:
@@ -43,12 +53,20 @@ paths:
             examples:
               - "e8f7b50c-cc18-42f9-a275-0b4ead73f806"
       responses:
-        "201":
+        # Corrected from the supplied spec's "201": a GET that returns an
+        # existing resource is 200, not 201 (Created). See docs/design.md §3.
+        "200":
           description: The matching exposure resource
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Exposure"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/InternalServerError"
 
   /users/{userId}/exposure-summary:
     get:
@@ -63,12 +81,15 @@ paths:
             format: uuid
             examples:
               - "713be58e-0d79-4df2-a85c-9f44ca513a7d"
+        # Corrected from the supplied spec's "format: date": the examples are
+        # RFC3339 date-times and exposure windows need exact instants/timezone,
+        # which a calendar date cannot express. See docs/design.md §3.
         - name: starting_at
           required: false
           in: query
           schema:
             type: string
-            format: date
+            format: date-time
             examples:
               - "2025-01-01T00:00:00Z"
         - name: ending_at
@@ -76,7 +97,7 @@ paths:
           in: query
           schema:
             type: string
-            format: date
+            format: date-time
             examples:
               - "2025-01-31T23:59:59Z"
       responses:
@@ -86,6 +107,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExposureSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   requestBodies:
@@ -111,6 +138,33 @@ components:
                 format: uuid
                 examples:
                   - "713be58e-0d79-4df2-a85c-9f44ca513a7d"
+  # Added (not in the supplied spec): a shared error response contract so the
+  # error surface is part of the spec and can be validated. See docs/design.md §3.
+  responses:
+    BadRequest:
+      description: The request was malformed, or a required field was missing or had an invalid format
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: The requested resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnprocessableEntity:
+      description: The request was well-formed but contained a semantically invalid value
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalServerError:
+      description: An unexpected error occurred
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     Exposure:
       type: object
@@ -185,3 +239,17 @@ components:
           examples:
             - 2.1
             - 4.0
+    # Added (not in the supplied spec): the body returned by all error responses.
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: A short, machine-readable error slug
+          examples:
+            - "exposure_not_found"
+        message:
+          type: string
+          description: A human-readable description of the error
+          examples:
+            - "no exposure with that id"

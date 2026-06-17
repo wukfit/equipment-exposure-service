@@ -58,6 +58,22 @@ internal/contracttest/repository.go  shared repository contract suite           
 
 ---
 
+## Task 0a: Reconcile the spec (applied in the planning PR)
+
+**Goal:** Make `spec.yaml` the single source of truth *before* codegen and before any contract test, so generated code, kin-openapi validation, and the implementation all agree.
+
+**These edits are already applied** to `spec.yaml` (in the plan-review PR); this task documents them and must precede Task 0 if regenerating from scratch:
+
+1. `GET /exposure/{exposureId}`: response `201` → **`200`** *(correction — 201/Created is wrong for a GET of an existing resource)*.
+2. `starting_at`/`ending_at`: `format: date` → **`date-time`** *(correction — the spec's own examples are RFC3339; codegen then yields `time.Time`)*.
+3. **Add** `components/schemas/ErrorResponse` (`{error, message}`) + reusable `components/responses` (`BadRequest`/`NotFound`/`UnprocessableEntity`/`InternalServerError`) referenced from each operation's error statuses *(addition — the supplied spec declared only success responses)*.
+
+Deliberately **not** changed: the POST body's missing `required` array — required-ness is enforced at the boundary (Task 3) so an absent field is a clean `400`, distinct from `422` for a present-but-invalid value.
+
+- [ ] **Step 1: Verify** `spec.yaml` contains the three changes (`grep '"200"'`, `grep 'date-time'`, `grep 'ErrorResponse'`) before running codegen in Task 0.
+
+---
+
 ## Task 0: Walking skeleton (PR #1)
 
 **Goal:** A booting `net/http` server with `/health`, generated API stubs, and one-command run — no domain logic.
@@ -830,8 +846,8 @@ func (r *ExposureRepo) ListByUserInWindow(_ context.Context, userID uuid.UUID, s
 		if e.UserID() != userID {
 			continue
 		}
-		// inclusive window [start, end]
-		if e.RecordedAt().Before(start) || e.RecordedAt().After(end) {
+		// half-open window [start, end): an instant on a boundary isn't double-counted
+		if e.RecordedAt().Before(start) || !e.RecordedAt().Before(end) {
 			continue
 		}
 		out = append(out, e)
@@ -1243,8 +1259,13 @@ func (s *Server) RecordExposure(w http.ResponseWriter, r *http.Request) {
 		writeError(w, s.deps.Logger, errBadRequest)
 		return
 	}
-	// body fields are uuid/int per spec; the generated types may already parse
-	// uuids. Map into the command input (parse if they are strings).
+	// The spec marks the body required but not its fields, so oapi-codegen
+	// generates them as pointers. Treat any missing field as 400 invalid_request,
+	// not a nil-deref panic (which recovery would otherwise turn into a 500).
+	if body.UserId == nil || body.EquipmentId == nil || body.Duration == nil {
+		writeError(w, s.deps.Logger, errBadRequest)
+		return
+	}
 	in := command.RecordExposureInput{
 		UserID:      uuid.UUID(*body.UserId),
 		EquipmentID: uuid.UUID(*body.EquipmentId),
@@ -1513,9 +1534,9 @@ func (h *GetUserExposureSummary) Handle(ctx context.Context, userID uuid.UUID, s
 }
 ```
 
-- [ ] **Step 5: Handler** — `GetUserExposureSummary(w, r, userId, params)`: parse the userId UUID (bad → `errBadRequest`); the generated `params` carry optional `StartingAt`/`EndingAt` — if they are strings, parse RFC3339 (bad → `errBadRequest`); call `app.ResolveWindow`, then the query; map to `api.ExposureSummary{A8, Points, User}`; **200**. Map `app.ErrInvalidWindow` → 400. Add a summary mapper + `*query.GetUserExposureSummary` and `app.Clock` to `RouterDeps`.
+- [ ] **Step 5: Handler** — `GetUserExposureSummary(w, r, userId, params)`: parse the userId UUID (bad → `errBadRequest`); the generated `params` carry optional `StartingAt *time.Time`/`EndingAt *time.Time` (from `format: date-time`) — normalise each to UTC; call `app.ResolveWindow`, then the query; map to `api.ExposureSummary{A8, Points, User}`; **200**. Map `app.ErrInvalidWindow` → 400. Add a summary mapper + `*query.GetUserExposureSummary` and `app.Clock` to `RouterDeps`.
 
-- [ ] **Step 6: kin-openapi validation helper + blackbox test** — `internal/adapters/http/openapi_test.go` loads `spec.yaml`, and a helper validates a captured response against the operation's response schema. `summary_test.go` exercises: in-window aggregation (a8≈2.0678, points 68), window boundary inclusivity, user isolation (Alice's exposures excluded from Bobby's summary), empty window → zeros, default window, unknown user → 404. Retrofit the validation helper into the earlier blackbox tests (POST/GET/list).
+- [ ] **Step 6: kin-openapi validation helper + blackbox test** — `internal/adapters/http/openapi_test.go` loads `spec.yaml`, and a helper validates a captured response against the operation's response schema **including error responses** (the spec now declares `ErrorResponse`), so the full surface is validated, not just success. `summary_test.go` exercises: the exact spec example timestamps accepted; tz offsets normalised to UTC; in-window aggregation (a8≈2.0678, points 68); **half-open `[start, end)` boundary** (exposure exactly at `end` excluded, at `start` included); user isolation (Alice's exposures excluded from Bobby's summary); empty window → zeros; default window; `start > end` → 400; unknown user → 404. Retrofit the validation helper into the earlier blackbox tests (POST/GET/list).
 
 - [ ] **Step 7: Run + Ship** — `go test -race -cover ./...` → PASS; `feat: user exposure summary (GET /users/{id}/exposure-summary)`; open the PR (branch `exposure-summary`).
 
