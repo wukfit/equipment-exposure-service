@@ -11,6 +11,7 @@ import (
 	"github.com/wukfit/equipment-exposure-service/internal/adapters/repository/memory"
 	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/app/command"
+	"github.com/wukfit/equipment-exposure-service/internal/app/query"
 	"github.com/wukfit/equipment-exposure-service/internal/seed"
 )
 
@@ -21,15 +22,18 @@ func newTestServer(t *testing.T, clock app.Clock) (*httptest.Server, *memory.Exp
 	t.Helper()
 	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
 	exposures := memory.NewExposureRepo()
+	users := memory.NewUserRepo(seed.Users()...)
+	equipment := memory.NewEquipmentRepo(seed.Equipment()...)
 	deps := apphttp.RouterDeps{
 		Logger: logger,
 		RecordExposure: command.NewRecordExposure(
 			exposures,
-			memory.NewUserRepo(seed.Users()...),
-			memory.NewEquipmentRepo(seed.Equipment()...),
+			users,
+			equipment,
 			events.NewSlogPublisher(logger),
 			clock,
 		),
+		GetExposure: query.NewGetExposure(exposures, users, equipment),
 	}
 	srv := httptest.NewServer(apphttp.NewRouter(deps))
 	t.Cleanup(srv.Close)

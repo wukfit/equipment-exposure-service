@@ -32,10 +32,14 @@ func writeError(w http.ResponseWriter, logger *slog.Logger, err error) {
 	case errors.Is(err, errBadRequest):
 		status, slug = http.StatusBadRequest, "invalid_request"
 	}
+	message := err.Error()
 	if status == http.StatusInternalServerError {
+		// Log full detail; return a generic message so internals (e.g. the IDs in
+		// a data-consistency error) are never leaked to clients.
 		logger.Error("request failed", slog.String("error", err.Error()))
+		message = "internal server error"
 	}
-	writeJSON(w, status, errorBody{Error: slug, Message: err.Error()})
+	writeJSON(w, status, errorBody{Error: slug, Message: message})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
