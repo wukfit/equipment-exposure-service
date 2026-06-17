@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+
+	"github.com/wukfit/equipment-exposure-service/internal/adapters/http/api"
+	"github.com/wukfit/equipment-exposure-service/internal/app/command"
 )
 
-// RouterDeps carries handler dependencies. Empty in slice 0; populated as slices land.
+// RouterDeps carries handler dependencies.
 type RouterDeps struct {
-	Logger *slog.Logger
-	// Server ServerInterface  // wired from slice 3 onward
+	Logger         *slog.Logger
+	RecordExposure *command.RecordExposure
 }
 
 func NewRouter(deps RouterDeps) http.Handler {
@@ -21,6 +24,9 @@ func NewRouter(deps RouterDeps) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
+
+	server := &Server{deps: deps}
+	api.HandlerFromMux(server, mux)
 
 	var h http.Handler = mux
 	h = recoverPanic(deps.Logger)(h)
