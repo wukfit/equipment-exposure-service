@@ -26,9 +26,9 @@ func TestGetExposure(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
 		// POST to create
-		body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}`,
+		reqBody := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":30}`,
 			seed.BobbyID, seed.AirCatID)
-		postResp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		postResp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(reqBody))
 		require.NoError(t, err)
 		defer postResp.Body.Close()
 		require.Equal(t, http.StatusCreated, postResp.StatusCode)
@@ -39,14 +39,17 @@ func TestGetExposure(t *testing.T) {
 		require.True(t, ok, "POST response should contain id string")
 
 		// GET by id
-		getResp, err := http.Get(srv.URL + "/exposure/" + id)
+		getURL := srv.URL + "/exposure/" + id
+		getResp, err := http.Get(getURL)
 		require.NoError(t, err)
 		defer getResp.Body.Close()
+		body := readBody(t, getResp)
 
 		assert.Equal(t, http.StatusOK, getResp.StatusCode)
+		checkSpec(t, http.MethodGet, getURL, getResp.StatusCode, getResp.Header, body)
 
 		var got map[string]any
-		require.NoError(t, json.NewDecoder(getResp.Body).Decode(&got))
+		require.NoError(t, json.NewDecoder(bytes.NewReader(body)).Decode(&got))
 
 		assert.Equal(t, id, got["id"])
 		assert.InDelta(t, 0.525, got["a8"].(float64), 0.001)
@@ -66,12 +69,15 @@ func TestGetExposure(t *testing.T) {
 	t.Run("unknown id returns 404 exposure_not_found", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
-		getResp, err := http.Get(srv.URL + "/exposure/" + uuid.New().String())
+		getURL := srv.URL + "/exposure/" + uuid.New().String()
+		getResp, err := http.Get(getURL)
 		require.NoError(t, err)
 		defer getResp.Body.Close()
+		body := readBody(t, getResp)
 
 		assert.Equal(t, http.StatusNotFound, getResp.StatusCode)
-		assertErrorSlug(t, getResp, "exposure_not_found")
+		checkSpec(t, http.MethodGet, getURL, getResp.StatusCode, getResp.Header, body)
+		assertErrorSlug(t, body, "exposure_not_found")
 	})
 
 	t.Run("exposure with a dangling reference returns 500 server_error", func(t *testing.T) {
@@ -84,22 +90,28 @@ func TestGetExposure(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, exposures.Save(context.Background(), exp))
 
-		getResp, err := http.Get(srv.URL + "/exposure/" + exp.ID().String())
+		getURL := srv.URL + "/exposure/" + exp.ID().String()
+		getResp, err := http.Get(getURL)
 		require.NoError(t, err)
 		defer getResp.Body.Close()
+		body := readBody(t, getResp)
 
 		assert.Equal(t, http.StatusInternalServerError, getResp.StatusCode)
-		assertErrorSlug(t, getResp, "server_error")
+		checkSpec(t, http.MethodGet, getURL, getResp.StatusCode, getResp.Header, body)
+		assertErrorSlug(t, body, "server_error")
 	})
 
 	t.Run("malformed path uuid returns 400 invalid_request as JSON", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 
-		getResp, err := http.Get(srv.URL + "/exposure/not-a-uuid")
+		getURL := srv.URL + "/exposure/not-a-uuid"
+		getResp, err := http.Get(getURL)
 		require.NoError(t, err)
 		defer getResp.Body.Close()
+		body := readBody(t, getResp)
 
 		assert.Equal(t, http.StatusBadRequest, getResp.StatusCode)
-		assertErrorSlug(t, getResp, "invalid_request")
+		checkSpec(t, http.MethodGet, getURL, getResp.StatusCode, getResp.Header, body)
+		assertErrorSlug(t, body, "invalid_request")
 	})
 }
