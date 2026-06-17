@@ -44,9 +44,10 @@ architecture, comprehensive test coverage, and single-command runnability.
 ```
 cmd/server                          wiring, config, graceful shutdown
 internal/domain                     Exposure aggregate, User, EquipmentItem,
-                                    PartialExposure VO, repository PORTS,
-                                    EventPublisher port, ExposureRecorded event,
+                                    PartialExposure VO, ExposureRecorded event,
                                     sentinel errors, the HAVS calc + aggregation
+internal/app                        application PORTS (ExposureStore, UserDirectory,
+                                    EquipmentCatalog, EventPublisher), Clock, window
 internal/app/command                RecordExposure
 internal/app/query                  GetExposure, ListExposures,
                                     GetUserExposureSummary  (+ ExposureReadModel)
@@ -107,12 +108,21 @@ from the **unrounded** per-exposure `a8`; points are the **sum of the
 per-exposure (already-rounded) `points`** — consistent with HSE per-activity
 points rounding. The combined A(8) is not re-rounded.
 
-### 5.5 Repository ports (domain)
+### 5.5 Ports (application layer, `internal/app`)
+
+The ports live in `internal/app`, defined beside the use cases that consume them
+— not in the domain. Persistence and event publication are application concerns,
+so the domain stays pure (entities, the VO, the calc, the `ExposureRecorded`
+event fact, sentinels) and the dependency rule adapters → app → domain holds.
+Keeping interfaces consumer-side is also idiomatic Go. Names are intent-revealing:
+`ExposureStore` is the data this service owns (read+write); `UserDirectory` and
+`EquipmentCatalog` are read-only reference data owned by other bounded contexts.
 
 ```go
-ExposureRepository:  Save · GetByID · List · ListByUserInWindow(userID, start, end)
-EquipmentRepository: GetByID
-UserRepository:      GetByID
+ExposureStore:    Save · GetByID · List · ListByUserInWindow(userID, start, end)
+EquipmentCatalog: GetByID
+UserDirectory:    GetByID
+EventPublisher:   Publish(ExposureRecorded)
 ```
 
 ### 5.6 Sentinel errors
@@ -176,7 +186,7 @@ Validation lives in domain constructors; no business logic in the HTTP layer.
 
 **In-code seam (included):**
 - `domain.ExposureRecorded` event: `exposureId, userId, equipmentId, a8, points, recordedAt`.
-- `domain.EventPublisher` port; `RecordExposure` publishes after a successful
+- `app.EventPublisher` port; `RecordExposure` publishes after a successful
   `Save`.
 - `adapters/events` slog adapter logs the event as structured JSON; a fake
   publisher in tests asserts emission.
@@ -270,7 +280,7 @@ against `main`, ending green and committed; never one-shot.
 
 ## 14. Compromises & next steps (for the README)
 
-- **Persistence is in-memory.** The `ExposureRepository` port makes Postgres a
+- **Persistence is in-memory.** The `app.ExposureStore` port makes Postgres a
   drop-in adapter; building it (pgx + sqlc + goose, docker compose app+db,
   testcontainers reusing the contract suite) is the first next step and a
   time-boxed stretch in this build.

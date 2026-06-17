@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/domain"
 )
 
@@ -15,11 +16,11 @@ type UserExposureSummary struct {
 }
 
 type GetUserExposureSummary struct {
-	exposures domain.ExposureRepository
-	users     domain.UserRepository
+	exposures app.ExposureStore
+	users     app.UserDirectory
 }
 
-func NewGetUserExposureSummary(e domain.ExposureRepository, u domain.UserRepository) *GetUserExposureSummary {
+func NewGetUserExposureSummary(e app.ExposureStore, u app.UserDirectory) *GetUserExposureSummary {
 	return &GetUserExposureSummary{exposures: e, users: u}
 }
 

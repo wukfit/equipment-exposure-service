@@ -5,16 +5,16 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/wukfit/equipment-exposure-service/internal/domain"
+	"github.com/wukfit/equipment-exposure-service/internal/app"
 )
 
 type GetExposure struct {
-	exposures domain.ExposureRepository
-	users     domain.UserRepository
-	equipment domain.EquipmentRepository
+	exposures app.ExposureStore
+	users     app.UserDirectory
+	equipment app.EquipmentCatalog
 }
 
-func NewGetExposure(e domain.ExposureRepository, u domain.UserRepository, eq domain.EquipmentRepository) *GetExposure {
+func NewGetExposure(e app.ExposureStore, u app.UserDirectory, eq app.EquipmentCatalog) *GetExposure {
 	return &GetExposure{exposures: e, users: u, equipment: eq}
 }
 

@@ -7,12 +7,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/contracttest"
 	"github.com/wukfit/equipment-exposure-service/internal/domain"
 )
 
 func TestExposureRepoContract(t *testing.T) {
-	contracttest.RunExposureRepository(t, func() domain.ExposureRepository {
+	contracttest.RunExposureStore(t, func() app.ExposureStore {
 		return NewExposureRepo()
 	})
 }

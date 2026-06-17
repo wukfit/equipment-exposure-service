@@ -3,16 +3,16 @@ package query
 import (
 	"context"
 
-	"github.com/wukfit/equipment-exposure-service/internal/domain"
+	"github.com/wukfit/equipment-exposure-service/internal/app"
 )
 
 type ListExposures struct {
-	exposures domain.ExposureRepository
-	users     domain.UserRepository
-	equipment domain.EquipmentRepository
+	exposures app.ExposureStore
+	users     app.UserDirectory
+	equipment app.EquipmentCatalog
 }
 
-func NewListExposures(e domain.ExposureRepository, u domain.UserRepository, eq domain.EquipmentRepository) *ListExposures {
+func NewListExposures(e app.ExposureStore, u app.UserDirectory, eq app.EquipmentCatalog) *ListExposures {
 	return &ListExposures{exposures: e, users: u, equipment: eq}
 }
 

@@ -170,16 +170,19 @@ and response-validation all agree with it.
 
 Ports & adapters / DDD. The dependency rule is strict: `adapters → app → domain`,
 and `domain` depends on nothing. The app layer never imports the generated HTTP
-types.
+types. Ports are defined in the **application layer** (consumer-side, beside the
+use cases that own them), not in the domain — persistence and event publication
+are application concerns, so the domain stays pure.
 
 ```
 cmd/server                              wiring, config, graceful shutdown
 internal/domain                         Exposure aggregate, User, EquipmentItem,
                                         PartialExposure VO (HAVS maths + Aggregate),
-                                        repository & EventPublisher ports, sentinels
+                                        ExposureRecorded event, sentinels
+internal/app                            application ports (ExposureStore, UserDirectory,
+                                        EquipmentCatalog, EventPublisher), Clock, window
 internal/app/command · query            RecordExposure; GetExposure, ListExposures,
-                                        GetUserExposureSummary (+ ExposureReadModel);
-                                        Clock, window resolution
+                                        GetUserExposureSummary (+ ExposureReadModel)
 internal/adapters/http                  oapi-codegen server, request→cmd/query and
                                         read-model→response mapping, error mapping,
                                         middleware
@@ -230,7 +233,7 @@ coverage, so the aggregate `total` figure understates the tested surface.
 
 ## Compromises & next steps
 
-- **Persistence is in-memory.** The `ExposureRepository` port makes Postgres a
+- **Persistence is in-memory.** The `app.ExposureStore` port makes Postgres a
   drop-in adapter; the first next step is `pgx` + `sqlc` + `goose`, a compose
   `app + db`, and the **same** `contracttest` suite run via testcontainers —
   proving substitutability with no new test code.
