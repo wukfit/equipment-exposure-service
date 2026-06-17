@@ -23,6 +23,10 @@ func (h *GetExposure) Handle(ctx context.Context, id uuid.UUID) (*ExposureReadMo
 	if err != nil {
 		return nil, err
 	}
+	// The user/equipment lookups always resolve: the catalog is immutable and the
+	// references were validated when the exposure was recorded. If the catalog
+	// becomes mutable (Postgres / lifecycle events), a miss here is a referential
+	// data-consistency error and should surface as 500, not as a 404 not-found.
 	user, err := h.users.GetByID(ctx, exp.UserID())
 	if err != nil {
 		return nil, err

@@ -32,7 +32,9 @@ func NewRouter(deps RouterDeps) http.Handler {
 		BaseRouter: mux,
 		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
 			// Generated param-binding failures (malformed path uuid, bad/missing
-			// query params) -> our JSON 400 error contract, not plain text.
+			// query params) -> our JSON 400 error contract, not plain text. Keep
+			// the specific parse error in the logs for debugging.
+			deps.Logger.Debug("param binding failed", slog.String("error", err.Error()))
 			writeError(w, deps.Logger, errBadRequest)
 		},
 	})

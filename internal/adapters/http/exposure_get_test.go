@@ -58,6 +58,7 @@ func TestGetExposure(t *testing.T) {
 		equipment, _ := got["equipment"].(map[string]any)
 		require.NotNil(t, equipment)
 		assert.Equal(t, "AirCat - Drill - 4337", equipment["name"])
+		assert.InDelta(t, 2.1, equipment["vibration_magnitude"].(float64), 0.01)
 	})
 
 	t.Run("unknown id returns 404 exposure_not_found", func(t *testing.T) {
