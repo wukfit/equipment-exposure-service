@@ -277,6 +277,16 @@ meaningful coverage, so the aggregate `total` understates the tested surface.
 
 ## Compromises & next steps
 
+Everything below is a deliberate trade-off for a time-boxed take-home (the brief
+budgets roughly 4 hours), not something I overlooked.
+
+- **No auth, no secret management, no database.** Authentication and
+  authorisation, secret handling, and a real datastore are all things a
+  production service needs, but adding them here would over-engineer the exercise
+  and pull focus from the part that's actually being assessed: the domain model
+  and the architecture. These are conscious omissions, not gaps. The in-memory
+  store keeps the thing runnable with a single command and no external
+  dependencies.
 - **Persistence is in-memory.** The `app.ExposureStore` port makes Postgres a
   drop-in adapter. The first next step is `pgx` + `sqlc` + `goose`, a compose
   `app + db`, and the **same** `contracttest` suite run through testcontainers,
