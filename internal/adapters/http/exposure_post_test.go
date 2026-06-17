@@ -114,6 +114,20 @@ func TestPostExposure(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
+	t.Run("wrong-typed duration (json string) returns 400 invalid_request", func(t *testing.T) {
+		srv, _ := newTestServer(t, clock)
+
+		// valid JSON, wrong type: duration as a string fails to decode into *int.
+		body := fmt.Sprintf(`{"user_id":%q,"equipment_id":%q,"duration":"30"}`,
+			seed.BobbyID, seed.AirCatID)
+		resp, err := http.Post(srv.URL+"/exposure", "application/json", bytes.NewBufferString(body))
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assertErrorSlug(t, resp, "invalid_request")
+	})
+
 	t.Run("missing duration field returns 400 invalid_request", func(t *testing.T) {
 		srv, _ := newTestServer(t, clock)
 

@@ -27,7 +27,7 @@ func TestSlogPublisher(t *testing.T) {
 		EquipmentID: uuid.New(),
 		A8:          0.525,
 		Points:      4,
-		RecordedAt:  time.Now(),
+		RecordedAt:  time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC),
 	})
 	require.NoError(t, err)
 
