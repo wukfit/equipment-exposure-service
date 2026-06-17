@@ -2,6 +2,7 @@ package http_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/wukfit/equipment-exposure-service/internal/app"
+	"github.com/wukfit/equipment-exposure-service/internal/domain"
 	"github.com/wukfit/equipment-exposure-service/internal/seed"
 )
 
@@ -70,6 +72,24 @@ func TestGetExposure(t *testing.T) {
 
 		assert.Equal(t, http.StatusNotFound, getResp.StatusCode)
 		assertErrorSlug(t, getResp, "exposure_not_found")
+	})
+
+	t.Run("exposure with a dangling reference returns 500 server_error", func(t *testing.T) {
+		srv, exposures := newTestServer(t, clock)
+
+		// Persist directly (the API can't create this — POST validates references)
+		// an exposure whose user is absent from the catalog, to exercise the
+		// data-consistency path end-to-end.
+		exp, err := domain.NewExposure(uuid.New(), seed.AirCatID, 30, 2.1, fixed)
+		require.NoError(t, err)
+		require.NoError(t, exposures.Save(context.Background(), exp))
+
+		getResp, err := http.Get(srv.URL + "/exposure/" + exp.ID().String())
+		require.NoError(t, err)
+		defer getResp.Body.Close()
+
+		assert.Equal(t, http.StatusInternalServerError, getResp.StatusCode)
+		assertErrorSlug(t, getResp, "server_error")
 	})
 
 	t.Run("malformed path uuid returns 400 invalid_request as JSON", func(t *testing.T) {

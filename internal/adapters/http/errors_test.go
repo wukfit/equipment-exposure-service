@@ -29,6 +29,7 @@ func TestWriteError(t *testing.T) {
 		{"exposure not found", domain.ErrExposureNotFound, http.StatusNotFound, "exposure_not_found"},
 		{"invalid duration", domain.ErrInvalidDuration, http.StatusUnprocessableEntity, "invalid_duration"},
 		{"bad request", errBadRequest, http.StatusBadRequest, "invalid_request"},
+		{"data consistency", domain.ErrDataConsistency, http.StatusInternalServerError, "server_error"},
 		{"unknown error", errors.New("something unexpected"), http.StatusInternalServerError, "server_error"},
 	}
 
@@ -43,6 +44,10 @@ func TestWriteError(t *testing.T) {
 			var body errorBody
 			require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 			assert.Equal(t, tc.wantSlug, body.Error)
+			if tc.wantStatus == http.StatusInternalServerError {
+				// 500s must not leak the underlying error text to the client.
+				assert.Equal(t, "internal server error", body.Message)
+			}
 		})
 	}
 }

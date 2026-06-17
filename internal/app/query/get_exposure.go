@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 
@@ -23,17 +24,18 @@ func (h *GetExposure) Handle(ctx context.Context, id uuid.UUID) (*ExposureReadMo
 	if err != nil {
 		return nil, err
 	}
-	// The user/equipment lookups always resolve: the catalog is immutable and the
-	// references were validated when the exposure was recorded. If the catalog
-	// becomes mutable (Postgres / lifecycle events), a miss here is a referential
-	// data-consistency error and should surface as 500, not as a 404 not-found.
+	// The exposure exists, so its references must resolve. A miss here is a
+	// referential data-consistency fault (e.g. a future mutable catalog dropped
+	// the record), not a client "not found" — wrap as ErrDataConsistency so the
+	// HTTP layer maps it to 500, not 404. (%v, not %w, on the underlying sentinel
+	// so it can't match the 404 mappings.)
 	user, err := h.users.GetByID(ctx, exp.UserID())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("exposure %s references missing user %s: %w (%v)", exp.ID(), exp.UserID(), domain.ErrDataConsistency, err)
 	}
 	equip, err := h.equipment.GetByID(ctx, exp.EquipmentID())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("exposure %s references missing equipment %s: %w (%v)", exp.ID(), exp.EquipmentID(), domain.ErrDataConsistency, err)
 	}
 	return &ExposureReadModel{Exposure: exp, User: user, Equipment: equip}, nil
 }

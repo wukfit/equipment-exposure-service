@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -49,5 +50,30 @@ func TestGetExposure(t *testing.T) {
 
 		_, err := h.Handle(context.Background(), seed.BobbyID) // any uuid not saved
 		assert.ErrorIs(t, err, domain.ErrExposureNotFound)
+	})
+
+	t.Run("dangling user reference is a data-consistency error, not a 404", func(t *testing.T) {
+		h, exposures := newHandler()
+
+		// Exposure exists but references a user absent from the catalog.
+		exp, err := domain.NewExposure(uuid.New(), seed.AirCatID, 30, 2.1, fixedTime)
+		require.NoError(t, err)
+		require.NoError(t, exposures.Save(context.Background(), exp))
+
+		_, err = h.Handle(context.Background(), exp.ID())
+		assert.ErrorIs(t, err, domain.ErrDataConsistency)
+		assert.NotErrorIs(t, err, domain.ErrUserNotFound) // must not look like a client not-found
+	})
+
+	t.Run("dangling equipment reference is a data-consistency error, not a 404", func(t *testing.T) {
+		h, exposures := newHandler()
+
+		exp, err := domain.NewExposure(seed.BobbyID, uuid.New(), 30, 2.1, fixedTime)
+		require.NoError(t, err)
+		require.NoError(t, exposures.Save(context.Background(), exp))
+
+		_, err = h.Handle(context.Background(), exp.ID())
+		assert.ErrorIs(t, err, domain.ErrDataConsistency)
+		assert.NotErrorIs(t, err, domain.ErrEquipmentNotFound)
 	})
 }
