@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/domain"
 )
 
@@ -20,7 +21,7 @@ type ExposureReadModel struct {
 // data-consistency fault (not a client not-found): wrap as ErrDataConsistency
 // (via %v on the underlying sentinel so it can't match the 404 mappings) so the
 // HTTP layer maps it to 500.
-func resolveReadModel(ctx context.Context, exp *domain.Exposure, users domain.UserRepository, equipment domain.EquipmentRepository) (*ExposureReadModel, error) {
+func resolveReadModel(ctx context.Context, exp *domain.Exposure, users app.UserDirectory, equipment app.EquipmentCatalog) (*ExposureReadModel, error) {
 	user, err := users.GetByID(ctx, exp.UserID())
 	if err != nil {
 		return nil, fmt.Errorf("exposure %s references missing user %s: %w (%v)", exp.ID(), exp.UserID(), domain.ErrDataConsistency, err)

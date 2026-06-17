@@ -9,16 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/domain"
 )
 
-// RunExposureRepository exercises any ExposureRepository implementation.
-func RunExposureRepository(t *testing.T, newRepo func() domain.ExposureRepository) {
+// RunExposureStore exercises any app.ExposureStore implementation.
+func RunExposureStore(t *testing.T, newStore func() app.ExposureStore) {
 	ctx := context.Background()
 	base := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 
 	t.Run("save then get", func(t *testing.T) {
-		repo := newRepo()
+		repo := newStore()
 		e, _ := domain.NewExposure(uuid.New(), uuid.New(), 30, 2.1, base)
 		require.NoError(t, repo.Save(ctx, e))
 		got, err := repo.GetByID(ctx, e.ID())
@@ -27,13 +28,13 @@ func RunExposureRepository(t *testing.T, newRepo func() domain.ExposureRepositor
 	})
 
 	t.Run("get missing returns ErrExposureNotFound", func(t *testing.T) {
-		repo := newRepo()
+		repo := newStore()
 		_, err := repo.GetByID(ctx, uuid.New())
 		assert.ErrorIs(t, err, domain.ErrExposureNotFound)
 	})
 
 	t.Run("window filters by user and time", func(t *testing.T) {
-		repo := newRepo()
+		repo := newStore()
 		user := uuid.New()
 		other := uuid.New()
 		inWindow, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, base)
@@ -51,7 +52,7 @@ func RunExposureRepository(t *testing.T, newRepo func() domain.ExposureRepositor
 	t.Run("half-open window boundary: start included, end excluded", func(t *testing.T) {
 		// Pins the documented [start, end) rule (design §3) so an adapter using
 		// inclusive-end (or exclusive-start) semantics cannot pass this contract.
-		repo := newRepo()
+		repo := newStore()
 		user := uuid.New()
 		start := base
 		end := base.Add(2 * time.Hour)
@@ -84,7 +85,7 @@ func RunExposureRepository(t *testing.T, newRepo func() domain.ExposureRepositor
 	t.Run("List is ordered by RecordedAt asc, ties broken by ID asc", func(t *testing.T) {
 		// Pins the List ordering as part of the port contract so a non-deterministic
 		// adapter (e.g. Postgres without ORDER BY recorded_at, id) cannot pass.
-		repo := newRepo()
+		repo := newStore()
 		earlier, _ := domain.NewExposure(uuid.New(), uuid.New(), 30, 2.1, base.Add(-time.Hour))
 		// Two exposures at the SAME timestamp: the tie must be broken by ID asc.
 		sameA, _ := domain.NewExposure(uuid.New(), uuid.New(), 30, 2.1, base)
@@ -107,7 +108,7 @@ func RunExposureRepository(t *testing.T, newRepo func() domain.ExposureRepositor
 	})
 
 	t.Run("concurrent saves are safe", func(t *testing.T) {
-		repo := newRepo()
+		repo := newStore()
 		done := make(chan struct{})
 		for i := 0; i < 50; i++ {
 			go func() {
