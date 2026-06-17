@@ -1,4 +1,4 @@
-package http_test
+package httpapi_test
 
 import (
 	"io"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/wukfit/equipment-exposure-service/internal/adapters/events"
-	apphttp "github.com/wukfit/equipment-exposure-service/internal/adapters/http"
+	"github.com/wukfit/equipment-exposure-service/internal/adapters/httpapi"
 	"github.com/wukfit/equipment-exposure-service/internal/adapters/repository/memory"
 	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/app/command"
@@ -24,7 +24,7 @@ func newTestServer(t *testing.T, clock app.Clock) (*httptest.Server, *memory.Exp
 	exposures := memory.NewExposureRepo()
 	users := memory.NewUserRepo(seed.Users()...)
 	equipment := memory.NewEquipmentRepo(seed.Equipment()...)
-	deps := apphttp.RouterDeps{
+	deps := httpapi.RouterDeps{
 		Logger: logger,
 		Clock:  clock,
 		RecordExposure: command.NewRecordExposure(
@@ -38,7 +38,7 @@ func newTestServer(t *testing.T, clock app.Clock) (*httptest.Server, *memory.Exp
 		ListExposures:          query.NewListExposures(exposures, users, equipment),
 		GetUserExposureSummary: query.NewGetUserExposureSummary(exposures, users),
 	}
-	srv := httptest.NewServer(apphttp.NewRouter(deps))
+	srv := httptest.NewServer(httpapi.NewRouter(deps))
 	t.Cleanup(srv.Close)
 	return srv, exposures
 }

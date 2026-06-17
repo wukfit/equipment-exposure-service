@@ -183,7 +183,7 @@ internal/app                            application ports (ExposureStore, UserDi
                                         EquipmentCatalog, EventPublisher), Clock, window
 internal/app/command · query            RecordExposure; GetExposure, ListExposures,
                                         GetUserExposureSummary (+ ExposureReadModel)
-internal/adapters/http                  oapi-codegen server, request→cmd/query and
+internal/adapters/httpapi               oapi-codegen server, request→cmd/query and
                                         read-model→response mapping, error mapping,
                                         middleware
 internal/adapters/repository/memory     in-memory adapters (behind the ports)
@@ -224,7 +224,7 @@ tests. Every blackbox response is validated against `spec.yaml` with
 | `internal/app` | 90.9% |
 | `internal/app/command` | 92.9% |
 | `internal/app/query` | 94.1% |
-| `internal/adapters/http` | 94.2% |
+| `internal/adapters/httpapi` | 94.2% |
 | `internal/adapters/repository/memory` | 91.8% |
 | `internal/adapters/events` · `internal/seed` | 100% |
 

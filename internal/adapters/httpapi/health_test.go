@@ -1,17 +1,17 @@
-package http_test
+package httpapi_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	apphttp "github.com/wukfit/equipment-exposure-service/internal/adapters/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/wukfit/equipment-exposure-service/internal/adapters/httpapi"
 )
 
 func TestHealth(t *testing.T) {
-	srv := httptest.NewServer(apphttp.NewRouter(apphttp.RouterDeps{}))
+	srv := httptest.NewServer(httpapi.NewRouter(httpapi.RouterDeps{}))
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/health")

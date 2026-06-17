@@ -1,4 +1,4 @@
-package http
+package httpapi
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/wukfit/equipment-exposure-service/internal/adapters/http/api"
+	"github.com/wukfit/equipment-exposure-service/internal/adapters/httpapi/api"
 	"github.com/wukfit/equipment-exposure-service/internal/app"
 	"github.com/wukfit/equipment-exposure-service/internal/app/command"
 )
