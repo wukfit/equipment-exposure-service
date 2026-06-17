@@ -5,14 +5,14 @@ import (
 	"github.com/wukfit/equipment-exposure-service/internal/app/query"
 )
 
-func ptr[T any](v T) *T { return &v }
-
 // toAPISummary builds the ExposureSummary API response from the query result.
+// All response fields are required in the spec, so the generated types are
+// values (not pointers) — every field is always populated.
 func toAPISummary(s *query.UserExposureSummary) api.ExposureSummary {
 	return api.ExposureSummary{
-		A8:     ptr(float32(s.Partial.A8())),
-		Points: ptr(float32(s.Partial.Points())),
-		User:   ptr(api.User{Id: ptr(s.User.ID()), Name: ptr(s.User.Name())}),
+		A8:     float32(s.Partial.A8()),
+		Points: float32(s.Partial.Points()),
+		User:   api.User{Id: s.User.ID(), Name: s.User.Name()},
 	}
 }
 
@@ -20,13 +20,13 @@ func toAPISummary(s *query.UserExposureSummary) api.ExposureSummary {
 func toAPIExposure(rm *query.ExposureReadModel) api.Exposure {
 	e, u, eq := rm.Exposure, rm.User, rm.Equipment
 	return api.Exposure{
-		Id:       ptr(e.ID()),
-		Duration: ptr(e.Duration()),
-		A8:       ptr(float32(e.Partial().A8())),
-		Points:   ptr(float32(e.Partial().Points())),
-		User:     ptr(api.User{Id: ptr(u.ID()), Name: ptr(u.Name())}),
-		Equipment: ptr(api.EquipmentItem{
-			Id: ptr(eq.ID()), Name: ptr(eq.Name()), VibrationMagnitude: ptr(float32(eq.VibrationMagnitude())),
-		}),
+		Id:       e.ID(),
+		Duration: e.Duration(),
+		A8:       float32(e.Partial().A8()),
+		Points:   float32(e.Partial().Points()),
+		User:     api.User{Id: u.ID(), Name: u.Name()},
+		Equipment: api.EquipmentItem{
+			Id: eq.ID(), Name: eq.Name(), VibrationMagnitude: float32(eq.VibrationMagnitude()),
+		},
 	}
 }

@@ -17,49 +17,49 @@ import (
 
 // EquipmentItem defines model for EquipmentItem.
 type EquipmentItem struct {
-	Id                 *openapi_types.UUID `json:"id,omitempty"`
-	Name               *string             `json:"name,omitempty"`
-	VibrationMagnitude *float32            `json:"vibration_magnitude,omitempty"`
+	Id                 openapi_types.UUID `json:"id"`
+	Name               string             `json:"name"`
+	VibrationMagnitude float32            `json:"vibration_magnitude"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	// Error A short, machine-readable error slug
-	Error *string `json:"error,omitempty"`
+	Error string `json:"error"`
 
 	// Message A human-readable description of the error
-	Message *string `json:"message,omitempty"`
+	Message string `json:"message"`
 }
 
 // Exposure defines model for Exposure.
 type Exposure struct {
 	// A8 The A8 value for the exposure
-	A8 *float32 `json:"a8,omitempty"`
+	A8 float32 `json:"a8"`
 
 	// Duration The duration of the exposure (in minutes)
-	Duration  *int                `json:"duration,omitempty"`
-	Equipment *EquipmentItem      `json:"equipment,omitempty"`
-	Id        *openapi_types.UUID `json:"id,omitempty"`
+	Duration  int                `json:"duration"`
+	Equipment EquipmentItem      `json:"equipment"`
+	Id        openapi_types.UUID `json:"id"`
 
 	// Points The partial exposure of points
-	Points *float32 `json:"points,omitempty"`
-	User   *User    `json:"user,omitempty"`
+	Points float32 `json:"points"`
+	User   User    `json:"user"`
 }
 
 // ExposureSummary defines model for ExposureSummary.
 type ExposureSummary struct {
 	// A8 The A8 value for the exposure
-	A8 *float32 `json:"a8,omitempty"`
+	A8 float32 `json:"a8"`
 
 	// Points The partial exposure of points
-	Points *float32 `json:"points,omitempty"`
-	User   *User    `json:"user,omitempty"`
+	Points float32 `json:"points"`
+	User   User    `json:"user"`
 }
 
 // User defines model for User.
 type User struct {
-	Id   *openapi_types.UUID `json:"id,omitempty"`
-	Name *string             `json:"name,omitempty"`
+	Id   openapi_types.UUID `json:"id"`
+	Name string             `json:"name"`
 }
 
 // BadRequest defines model for BadRequest.
