@@ -36,6 +36,7 @@ func main() {
 		Logger:         logger,
 		RecordExposure: command.NewRecordExposure(exposures, users, equipment, publisher, app.SystemClock),
 		GetExposure:    query.NewGetExposure(exposures, users, equipment),
+		ListExposures:  query.NewListExposures(exposures, users, equipment),
 	})
 	srv := &http.Server{
 		Addr:              ":" + getenv("PORT", "8080"),

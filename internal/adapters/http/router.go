@@ -15,6 +15,7 @@ type RouterDeps struct {
 	Logger         *slog.Logger
 	RecordExposure *command.RecordExposure
 	GetExposure    *query.GetExposure
+	ListExposures  *query.ListExposures
 }
 
 func NewRouter(deps RouterDeps) http.Handler {
