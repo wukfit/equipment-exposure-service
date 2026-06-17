@@ -48,6 +48,36 @@ func RunExposureRepository(t *testing.T, newRepo func() domain.ExposureRepositor
 		assert.Equal(t, inWindow.ID(), got[0].ID())
 	})
 
+	t.Run("half-open window boundary: start included, end excluded", func(t *testing.T) {
+		// Pins the documented [start, end) rule (design §3) so an adapter using
+		// inclusive-end (or exclusive-start) semantics cannot pass this contract.
+		repo := newRepo()
+		user := uuid.New()
+		start := base
+		end := base.Add(2 * time.Hour)
+
+		atStart, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, start)                          // included: recordedAt == start
+		justBeforeEnd, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, end.Add(-time.Nanosecond)) // included: recordedAt < end
+		atEnd, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, end)                               // excluded: recordedAt == end
+		justBeforeStart, _ := domain.NewExposure(user, uuid.New(), 30, 2.1, start.Add(-time.Nanosecond)) // excluded: recordedAt < start
+		for _, e := range []*domain.Exposure{atStart, justBeforeEnd, atEnd, justBeforeStart} {
+			require.NoError(t, repo.Save(ctx, e))
+		}
+
+		got, err := repo.ListByUserInWindow(ctx, user, start, end)
+		require.NoError(t, err)
+
+		ids := make(map[uuid.UUID]bool, len(got))
+		for _, e := range got {
+			ids[e.ID()] = true
+		}
+		assert.True(t, ids[atStart.ID()], "exposure exactly at start must be included ([start, end))")
+		assert.True(t, ids[justBeforeEnd.ID()], "exposure just before end must be included")
+		assert.False(t, ids[atEnd.ID()], "exposure exactly at end must be excluded ([start, end))")
+		assert.False(t, ids[justBeforeStart.ID()], "exposure before start must be excluded")
+		assert.Len(t, got, 2)
+	})
+
 	t.Run("concurrent saves are safe", func(t *testing.T) {
 		repo := newRepo()
 		done := make(chan struct{})
