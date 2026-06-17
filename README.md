@@ -172,7 +172,7 @@ and response validation all agree with it.
 | **Internal `recordedAt` = server `now()`** | The response and POST schemas carry no timestamp, but the summary filters by a window, so the service needs one internally. It comes from an injected `Clock` and isn't serialised. |
 | **`ErrorResponse` schema and `required` lists added** | The supplied spec declared only success responses, with no required fields. Adding the error contract and the required fields means the whole surface, success and error, is validated against the spec in tests. |
 | **POST body has no `required` list** (deliberate) | Required-ness is enforced at the boundary, so an absent field returns a clean **400**, kept separate from the **422** you get for a present-but-invalid value. |
-| **OpenAPI 3.0.3** (not 3.1) | `oapi-codegen` doesn't support 3.1 yet. The spec uses no 3.1-only features, so 3.0.3 keeps codegen and validation warning-free. |
+| **OpenAPI 3.0.3** (not 3.1) | `oapi-codegen` v2.7.1 can parse some OpenAPI 3.1 documents, but full 3.1 support is not released and the tool warns/recommends downgrading to 3.0.x; this spec uses no 3.1-only features, so 3.0.3 is used for warning-free codegen. |
 | **Referential miss on a read → 500** | A stored exposure whose user or equipment can't be resolved is a server-side data-consistency fault, not a client 404. It can't happen today with the immutable seed catalog, but the handling is correct once the catalog becomes mutable. |
 
 ## Architecture
